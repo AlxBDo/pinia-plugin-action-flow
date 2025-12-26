@@ -1,0 +1,41 @@
+{
+  "name": "pinia-plugin-action-flow",
+  "description": "Give more power to your Pinia store actions",
+  "private": true,
+  "version": "0.0.0-alpha.1",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/pinia-plugin-action-flow.js",
+      "require": "./dist/pinia-plugin-action-flow.umd.cjs"
+    }
+  },
+  "main": "./dist/pinia-plugin-action-flow.umd.cjs",
+  "types": "./dist/types/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && tsc --emitDeclarationOnly --outDir dist",
+    "preview": "vite preview",
+    "test": "vitest",
+    "coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "pinia-plugin-subscription": "^0.0.0-beta.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@vitejs/plugin-vue": "^6.0.1",
+    "@vitest/coverage-v8": "^4.0.16",
+    "@vue/tsconfig": "^0.8.1",
+    "pinia": "^3.0.4",
+    "typescript": "~5.9.3",
+    "vite": "^7.2.4",
+    "vitest": "^4.0.16",
+    "vue": "^3.5.24",
+    "vue-tsc": "^3.1.4"
+  }
+}
