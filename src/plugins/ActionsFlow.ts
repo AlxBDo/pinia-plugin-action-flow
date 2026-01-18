@@ -1,7 +1,7 @@
 import ActionsStoreFlow from "../core/ActionsStoreFlow";
 import { PluginSubscriber } from "pinia-plugin-subscription";
 import { PluginConsole } from "../utils/pluginConsole";
-import type { ActionsStoreFlowOptions, PluginStoreOptions } from "../types/plugin";
+import type { PluginStoreOptions } from "../types/plugin";
 import { pluginName } from "../utils/constantes";
 
 

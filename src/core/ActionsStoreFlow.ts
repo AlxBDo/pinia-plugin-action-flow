@@ -1,5 +1,5 @@
 import type { Store } from "pinia";
-import type { AnyObject, CustomConsole } from "pinia-plugin-subscription";
+import type { AnyObject, CustomConsole, StoreOnActionCallbackParameters } from "pinia-plugin-subscription";
 import { isEmpty, Store as StoreClass } from 'pinia-plugin-subscription';
 import type { ActionFlows, PluginStoreOptions } from "../types/plugin";
 
@@ -20,10 +20,7 @@ export default class ActionsStoreFlow extends StoreClass {
     ) {
         super(store, options, debug, customConsole)
 
-        this.debugLog(`constructor - store "${this.store.$id}"`, [
-            'options:', options,
-            'store:', store
-        ])
+        this.debugLog(`constructor - store "${this.store.$id}"`, { options, store })
 
         this.onAction = this.onActionCallback.bind(this)
     }
@@ -42,11 +39,7 @@ export default class ActionsStoreFlow extends StoreClass {
     private invokeFlow(args: any[] | object, name: string, flow?: Function | string, result?: any): boolean {
         if (!flow) { return false }
 
-        this.debugLog(`Invoking flow for action "${name}"`, [
-            'args:', args,
-            'result:', result,
-            'flow:', flow
-        ])
+        this.debugLog(`Invoking flow for action "${name}"`, { args, flow, result })
 
         if (!isEmpty(result)) {
             args = { args, result }
@@ -63,7 +56,7 @@ export default class ActionsStoreFlow extends StoreClass {
         return true
     }
 
-    onActionCallback({ after, args, name }): void {
+    onActionCallback({ after, args, name }: StoreOnActionCallbackParameters): void {
         if (!(this.flows as AnyObject)[name] || this._flowsOnAction.get(this.getOnActionFlowName(name, args))) { return }
 
         const { after: afterAction, before } = (this.flows as AnyObject)[name]

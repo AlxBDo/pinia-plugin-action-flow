@@ -1,3 +1,3 @@
 export type {
-    ActionFlows
+    ActionFlows as ActionsFlowsInterface
 } from "./plugin";
