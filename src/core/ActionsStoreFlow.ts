@@ -4,7 +4,7 @@ import { isEmpty, Store as StoreClass } from 'pinia-plugin-subscription';
 import type { ActionFlows, PluginStoreOptions } from "../types/plugin";
 
 export default class ActionsStoreFlow extends StoreClass {
-    protected override _className: string = 'StoreExtension'
+    protected override _className: string = 'ActionsStoreFlow'
     private _flowsOnAction: Map<string, boolean> = new Map<string, boolean>()
     protected static override _requiredKeys: string[] = ['flows']
 
@@ -33,7 +33,7 @@ export default class ActionsStoreFlow extends StoreClass {
     }
 
     private getOnActionFlowName(name: string, args: any[] | object): string {
-        return name + JSON.stringify(args)
+        return this.store.$id + name + JSON.stringify(args)
     }
 
     private invokeFlow(args: any[] | object, name: string, flow?: Function | string, result?: any): boolean {
