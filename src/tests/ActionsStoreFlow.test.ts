@@ -11,7 +11,7 @@ describe('ActionsStoreFlow', () => {
   beforeEach(() => {
     pinia = createPinia()
     // install the subscription plugin with our ActionsFlow plugin
-    pinia.use(createPlugin([piniaPluginActionFlow], true))
+    pinia.use(createPlugin([piniaPluginActionFlow]))
   })
 
   it('calls before and after flows and transforms args (unit)', () => {

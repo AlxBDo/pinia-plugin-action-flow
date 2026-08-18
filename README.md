@@ -26,8 +26,15 @@ yarn add pinia-plugin-action-flow
 ```typescript
 import { createPinia } from 'pinia'
 import { ActionsFlows } from 'pinia-plugin-action-flow'
+import { createPlugin } from 'pinia-plugin-subscription'
+import App from './App.vue'
 
+const app = createApp(App)
 const pinia = createPinia()
+
+pinia.use(
+  createPlugin([ActionsFlows])
+)
 pinia.use(ActionsFlows)
 
 app.use(pinia)
@@ -86,7 +93,10 @@ export const useOnActionStore = defineStore('onActionStore', () => {
   storeOptions
 })
 
-function afterSetMyStateCallback(value: string) {
+function afterSetMyStateCallback(
+  value: ActionFlowDefaultParameters[] 
+    | { args: ActionFlowDefaultParameters[], result: ActionFlowDefaultParameters | ActionFlowDefaultParameters[] }
+) {
   console.log('After setting myState to:', value)
 }
 ```
@@ -103,7 +113,7 @@ store.setMyState('hello')
 // Logs:
 // > "Before setting myState with args: ['hello']"
 // > Value is now: "HELLO"
-// > "After setting myState to: HELLO"
+// > "After setting myState to: ['HELLO']"
 
 console.log(store.myState) // "HELLO"
 ```
@@ -209,7 +219,7 @@ export const useUserStore = defineStore('userStore', () => {
   }
 
   // Before/After hooks
-  function beforeAddUser(args: string[]) {
+  function beforeAddUser(args: ActionFlowDefaultParameters[]) {
     console.log('Adding user:', args[0])
     if (!args[0] || args[0].trim() === '') {
       console.warn('User name cannot be empty')
@@ -217,7 +227,12 @@ export const useUserStore = defineStore('userStore', () => {
     }
   }
 
-  function afterAddUser(payload: any) {
+  function afterAddUser(
+    payload: ActionFlowDefaultParameters[]
+      | {
+          args: ActionFlowDefaultParameters[],
+          result: ActionFlowDefaultParameters | ActionFlowDefaultParameters[]
+  }) {
     console.log('User added:', payload.result)
     // Trigger analytics, notifications, etc.
   }
