@@ -16,11 +16,10 @@
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",
-      "import": "./dist/pinia-plugin-action-flow.js",
-      "require": "./dist/pinia-plugin-action-flow.umd.cjs"
+      "import": "./dist/pinia-plugin-action-flow.js"
     }
   },
-  "main": "./dist/pinia-plugin-action-flow.umd.cjs",
+  "main": "./dist/pinia-plugin-action-flow.umd.js",
   "types": "./dist/types/index.d.ts",
   "files": [
     "dist",
@@ -43,7 +42,7 @@
     "coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "pinia-plugin-subscription": "^0.1.1"
+    "pinia-plugin-subscription": "^0.1.7"
   },
   "peerDependencies": {
     "pinia": "^2.0.0 || ^3.0.0",
@@ -54,12 +53,12 @@
     "@vitejs/plugin-vue": "^6.0.1",
     "@vitest/coverage-v8": "^4.0.15",
     "@vue/tsconfig": "^0.8.1",
+    "pinia": "^3.0.2",
     "typescript": "~5.9.3",
     "vite": "^7.2.4",
     "vitest": "^4.0.16",
-    "vue-tsc": "^3.1.4",
-    "pinia": "^3.0.2",
-    "vue": "^3.5.24"
+    "vue": "^3.5.24",
+    "vue-tsc": "^3.1.4"
   },
   "keywords": [
     "pinia",
@@ -68,7 +67,8 @@
     "store",
     "actions",
     "flow",
-    "typescript"
+    "typescript",
+    "pinia-plugin-subscription"
   ],
   "sideEffects": false
 }
