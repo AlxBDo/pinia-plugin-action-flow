@@ -1,10 +1,10 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import { createPlugin, PLUGIN_NAME as PPS } from 'pinia-plugin-subscription';
-import piniaPluginActionFlow from './plugins/ActionsFlow';
+import piniaPluginActionFlow from '../plugins/ActionsFlow.ts';
 import './style.css'
 import App from './App.vue'
-import { pluginName } from './utils/constantes';
+import { pluginName } from '../utils/constants.ts';
 
 const app = createApp(App)
 const pinia = createPinia();

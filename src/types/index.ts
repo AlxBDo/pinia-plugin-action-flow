@@ -1,8 +1,9 @@
-import type { PluginSubscriberInterface } from "pinia-plugin-subscription";
+import ActionsFlows from '../plugins/ActionsFlow'
 
 export type {
     ActionFlows as ActionsFlowsInterface
 } from "./plugin";
 
-export declare const ActionsFlows: PluginSubscriberInterface;
-export declare const PLUGIN_NAME: string;
+export type { ActionsFlows };
+
+export type { pluginName as PLUGIN_NAME } from "../utils/constants";

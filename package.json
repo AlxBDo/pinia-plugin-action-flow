@@ -19,7 +19,7 @@
       "import": "./dist/pinia-plugin-action-flow.js"
     }
   },
-  "main": "./dist/pinia-plugin-action-flow.umd.js",
+  "main": "./dist/pinia-plugin-action-flow.js",
   "types": "./dist/types/index.d.ts",
   "files": [
     "dist",
@@ -35,7 +35,7 @@
     "provenance": true
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --config vite.demo.config.ts",
     "build": "vitest && vite build && tsc --emitDeclarationOnly --outDir dist",
     "preview": "vite preview",
     "test": "vitest",

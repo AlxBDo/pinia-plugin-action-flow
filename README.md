@@ -35,7 +35,6 @@ const pinia = createPinia()
 pinia.use(
   createPlugin([ActionsFlows])
 )
-pinia.use(ActionsFlows)
 
 app.use(pinia)
 ```

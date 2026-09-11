@@ -1,11 +1,11 @@
 import type { Store } from "pinia";
 import type { AnyObject, CustomConsole, StoreOnActionCallbackParameters } from "pinia-plugin-subscription";
 import { isEmpty, Store as StoreClass } from 'pinia-plugin-subscription';
-import type { ActionFlows, PluginStoreOptions } from "../types/plugin";
+import type { ActionFlows, ActionFlowStoreOptions } from "../types/plugin";
 
 export default class ActionsStoreFlow extends StoreClass {
     protected override _className: string = 'ActionsStoreFlow'
-    private _flowsOnAction: Map<string, boolean> = new Map<string, boolean>()
+    private _flowsOnAction: Map<string, number> = new Map<string, number>()
     protected static override _requiredKeys: string[] = ['flows']
 
     get flows(): ActionFlows | undefined {
@@ -14,7 +14,7 @@ export default class ActionsStoreFlow extends StoreClass {
 
     constructor(
         store: Store,
-        options: PluginStoreOptions & AnyObject,
+        options: ActionFlowStoreOptions & AnyObject,
         debug: boolean = false,
         customConsole?: CustomConsole
     ) {
@@ -26,41 +26,52 @@ export default class ActionsStoreFlow extends StoreClass {
     }
 
 
-    private addFlowOnAction(name: string, args: any[] | object): void {
-        const actionName = this.getOnActionFlowName(name, args)
-        this._flowsOnAction.set(actionName, true)
-        setTimeout(() => { this._flowsOnAction.set(actionName, false) }, 250)
+    private addFlowOnAction(name: string, promiseFlow: Promise<any>, timing: string): void {
+        const actionName = this.getOnActionFlowName(name, timing)
+        this._flowsOnAction.set(actionName, (this._flowsOnAction.get(actionName) ?? 0) + 1)
+        promiseFlow.finally(() => {
+            this._flowsOnAction.delete(actionName)
+        })
     }
 
-    private getOnActionFlowName(name: string, args: any[] | object): string {
-        return this.store.$id + name + JSON.stringify(args)
+    private getOnActionFlowName(name: string, timing: string): string {
+        return this.store.$id + name + timing
     }
 
     private invokeFlow(args: any[] | object, name: string, flow?: Function | string, result?: any): boolean {
         if (!flow) { return false }
+        let timing = 'before'
 
         this.debugLog(`Invoking flow for action "${name}"`, { args, flow, result })
 
-        if (!isEmpty(result)) {
+        if (typeof result !== 'undefined') {
             args = { args, result }
+            timing = 'after'
         }
 
-        if (typeof flow === 'function') {
-            flow(args)
-        } else if (typeof flow === 'string' && typeof this.store[flow] === 'function') {
-            this.store[flow](args)
+        if (typeof flow === 'string' && typeof this.store[flow] === 'function') {
+            flow = this.store[flow]
         }
 
-        this.addFlowOnAction(name, args)
+        const promiseFlow = new Promise((resolve) => {
+            resolve((flow as Function)(args))
+        })
+
+        this.addFlowOnAction(name, promiseFlow, timing)
 
         return true
     }
 
     onActionCallback({ after, args, name }: StoreOnActionCallbackParameters): void {
-        if (!(this.flows as AnyObject)[name] || this._flowsOnAction.get(this.getOnActionFlowName(name, args))) { return }
+        if (this.hasDeniedFirstChar(name)) { return }
+        if (!(this.flows as AnyObject)[name]) { return }
 
         const { after: afterAction, before } = (this.flows as AnyObject)[name]
-        this.invokeFlow(args, name, before)
-        after((result: any) => this.invokeFlow(args, name, afterAction, result))
+        if (!this._flowsOnAction.get(this.getOnActionFlowName(name, 'before'))) {
+            this.invokeFlow(args, name, before)
+        }
+        if (!this._flowsOnAction.get(this.getOnActionFlowName(name, 'after'))) {
+            after((result: any) => this.invokeFlow(args, name, afterAction, result ?? false))
+        }
     }
 }
