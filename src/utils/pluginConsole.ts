@@ -1,5 +1,5 @@
 import { CustomConsole } from "pinia-plugin-subscription";
-import { pluginName } from "./constantes";
+import { pluginName } from "./constants";
 
 class PluginConsoleClass extends CustomConsole {
     protected _pluginName = pluginName;

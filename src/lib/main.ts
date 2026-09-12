@@ -4,4 +4,4 @@ export {
     ActionsFlows
 }
 
-export { pluginName as PLUGIN_NAME } from '../utils/constantes'
+export { pluginName as PLUGIN_NAME } from '../utils/constants'

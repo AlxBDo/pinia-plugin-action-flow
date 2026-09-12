@@ -1,7 +1,7 @@
 {
   "name": "pinia-plugin-action-flow",
   "description": "Give more power to your Pinia store actions",
-  "version": "0.1.0",
+  "version": "0.1.1-beta.0",
   "type": "module",
   "author": "Alexandre Bidaud <alexbidaud85@gmail.com> (https://github.com/AlxBDo)",
   "license": "MIT",
@@ -19,7 +19,7 @@
       "import": "./dist/pinia-plugin-action-flow.js"
     }
   },
-  "main": "./dist/pinia-plugin-action-flow.umd.js",
+  "main": "./dist/pinia-plugin-action-flow.js",
   "types": "./dist/types/index.d.ts",
   "files": [
     "dist",
@@ -35,7 +35,7 @@
     "provenance": true
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --config vite.demo.config.ts",
     "build": "vitest && vite build && tsc --emitDeclarationOnly --outDir dist",
     "preview": "vite preview",
     "test": "vitest",

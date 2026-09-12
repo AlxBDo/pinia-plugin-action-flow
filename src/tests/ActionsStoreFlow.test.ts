@@ -1,124 +1,156 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { createPinia, defineStore } from 'pinia'
-import { ref } from 'vue'
+import { createPinia, defineStore, type Pinia } from 'pinia'
+import { createApp, ref } from 'vue'
 import { createPlugin } from 'pinia-plugin-subscription'
 import piniaPluginActionFlow from '../plugins/ActionsFlow'
-import ActionsStoreFlow from '../core/ActionsStoreFlow'
 
 describe('ActionsStoreFlow', () => {
-  let pinia: ReturnType<typeof createPinia>
+  let pinia: Pinia
 
   beforeEach(() => {
     pinia = createPinia()
-    // install the subscription plugin with our ActionsFlow plugin
     pinia.use(createPlugin([piniaPluginActionFlow]))
+    // Pinia only moves queued plugins into the active list once installed on an app
+    createApp({}).use(pinia)
   })
 
-  it('calls before and after flows and transforms args (unit)', () => {
+  it('invokes before/after flows through a real Pinia dispatch and transforms args', () => {
     const beforeSpy = vi.fn()
     const afterSpy = vi.fn()
 
     const before = (args: string[]) => {
-      beforeSpy()
-      args[0] = args[0].toUpperCase()
+      beforeSpy(args)
+      args[0] = (args[0] ?? '').toUpperCase()
     }
+    const after = (args: any) => afterSpy(args)
 
-    const after = (args: any) => {
-      afterSpy(args)
-    }
-
-    const useStore = defineStore(
-      'test-on-action',
-      () => {
-        const myState = ref<string>('')
-        function setMyState(value: string) {
-          myState.value = value
-        }
-        return { myState, setMyState }
+    const useStore = defineStore('real-dispatch-store', () => {
+      const myState = ref<string>('')
+      function setMyState(value: string) {
+        myState.value = value
       }
-    )
+      return { myState, setMyState }
+    }, {
+      storeOptions: { flows: { setMyState: { before, after } } }
+    })
 
     const store = useStore(pinia)
+    store.setMyState('hello')
 
-    const flows = { setMyState: { before, after } }
-    const actionsFlow = new ActionsStoreFlow(store, { storeOptions: { flows } }, true)
+    // args is mutated in place by the before flow, so by now it holds the transformed value
+    expect(beforeSpy).toHaveBeenCalledWith(['HELLO'])
+    expect(store.myState).toBe('HELLO')
 
-    let afterCb: Function | undefined
-    const afterRegistrar = (cb: Function) => { afterCb = cb }
+    // after flow runs asynchronously (invoked from a resolved Promise), wait for microtasks to flush
+    return Promise.resolve().then(() => {
+      expect(afterSpy).toHaveBeenCalled()
+    })
+  })
 
-    // Simulate an action call: plugin receives { after, args, name }
-    actionsFlow.onActionCallback({ after: afterRegistrar, args: ['hello'], name: 'setMyState' })
+  it('resolves the before/after target from a store method name', () => {
+    const afterSpy = vi.fn()
 
-    // before should have been called and transformed args
-    expect(beforeSpy).toHaveBeenCalledTimes(1)
+    const useStore = defineStore('method-name-store', () => {
+      const myState = ref<string>('')
+      function setMyState(value: string) {
+        myState.value = value
+      }
+      function beforeSetMyState(args: string[]) {
+        args[0] = (args[0] ?? '').toUpperCase()
+      }
+      return { myState, setMyState, beforeSetMyState }
+    }, {
+      storeOptions: { flows: { setMyState: { before: 'beforeSetMyState', after: afterSpy } } }
+    })
 
-    // apply the action using the transformed arg
-    store.setMyState('HELLO')
+    const store = useStore(pinia)
+    store.setMyState('hello')
 
-    // simulate action completion
-    afterCb && afterCb(undefined)
-
-    // after should have been called
-    expect(afterSpy).toHaveBeenCalled()
-
-    // state should reflect transformed value
     expect(store.myState).toBe('HELLO')
   })
 
-  it('prevents re-entrancy when a flow re-invokes the same action (unit)', () => {
+  it('ignores actions/properties whose name starts with "$" or "_" (security guard)', () => {
+    const flowSpy = vi.fn()
+
+    const useStore = defineStore('denied-first-char-store', () => {
+      const myState = ref<string>('initial')
+      return { myState }
+    }, {
+      // flows keyed on internal-looking names must never be triggered by dispatched actions
+      storeOptions: { flows: { $patch: { before: flowSpy }, _internal: { before: flowSpy } } }
+    })
+
+    const store = useStore(pinia)
+    store.$patch({ myState: 'changed' })
+
+    expect(flowSpy).not.toHaveBeenCalled()
+    expect(store.myState).toBe('changed')
+  })
+
+  it('prevents re-entrancy while a flow for the same action is still pending', async () => {
+    const beforeSpy = vi.fn()
+    let releaseAfter: (() => void) | undefined
+
+    const useStore = defineStore('reentrancy-store', () => {
+      const myState = ref<string>('')
+      function setMyState(value: string) {
+        myState.value = value
+      }
+      return { myState, setMyState }
+    }, {
+      storeOptions: {
+        flows: {
+          setMyState: {
+            before: (args: string[]) => {
+              beforeSpy()
+              args[0] = (args[0] ?? '').toUpperCase()
+            },
+            // keeps the guard "locked" until the test explicitly releases it
+            after: () => new Promise<void>((resolve) => { releaseAfter = resolve })
+          }
+        }
+      }
+    })
+
+    const store = useStore(pinia)
+
+    store.setMyState('hello')
+    expect(beforeSpy).toHaveBeenCalledTimes(1)
+
+    // re-invoking the same action while the "after" flow is still pending must be ignored:
+    // the action itself still runs, but its before/after flow is skipped (no uppercase transform)
+    store.setMyState('world')
+    expect(beforeSpy).toHaveBeenCalledTimes(1)
+    expect(store.myState).toBe('world')
+
+    releaseAfter?.()
+    // flush the promise chain (resolve(promise) adoption + .finally callback needs a few microtask ticks)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    // once the pending flow settles, the guard is released and the action can run again
+    store.setMyState('again')
+    expect(beforeSpy).toHaveBeenCalledTimes(2)
+    expect(store.myState).toBe('AGAIN')
+  })
+
+  it('does not crash when args contain a circular reference', () => {
     const beforeSpy = vi.fn()
 
-    const before = (args: string[]) => {
-      beforeSpy()
-      args[0] = args[0].toUpperCase()
-    }
-
-    const useStore = defineStore(
-      'reentrancy-store',
-      () => {
-        const myState = ref<string>('')
-        function setMyState(value: string) {
-          myState.value = value
-        }
-        return { myState, setMyState }
+    const useStore = defineStore('circular-args-store', () => {
+      const myState = ref<any>(null)
+      function setMyState(value: any) {
+        myState.value = value
       }
-    )
+      return { myState, setMyState }
+    }, {
+      storeOptions: { flows: { setMyState: { before: beforeSpy } } }
+    })
 
-    const storeRef = useStore(pinia)
+    const store = useStore(pinia)
+    const circular: any = {}
+    circular.self = circular
 
-    const flows = {
-      setMyState: {
-        before,
-        after: (args: string[]) => {
-          // simulate re-invocation of the same action by calling the onAction handler again
-          // we don't call storeRef.setMyState here directly; instead the test will simulate
-        }
-      }
-    }
-
-    const actionsFlow = new ActionsStoreFlow(storeRef, { storeOptions: { flows } }, true)
-
-    // First invocation
-    let afterCb: Function | undefined
-    actionsFlow.onActionCallback({ after: (cb: Function) => { afterCb = cb }, args: ['hello'], name: 'setMyState' })
-
-    // before should have been called once
-    expect(beforeSpy).toHaveBeenCalledTimes(1)
-
-    // simulate applying the action
-    storeRef.setMyState('HELLO')
-
-    // simulate action completion and after flow which re-invokes the same action
-    afterCb && afterCb(undefined)
-
-    // Simulate Pinia firing the action again due to re-invocation inside after flow
-    // This call should be ignored by the ActionsStoreFlow because of the _flowsOnAction guard
-    actionsFlow.onActionCallback({ after: () => { }, args: ['HELLO'], name: 'setMyState' })
-
-    // before should still have been called only once
-    expect(beforeSpy).toHaveBeenCalledTimes(1)
-
-    // state should remain transformed
-    expect(storeRef.myState).toBe('HELLO')
+    expect(() => store.setMyState(circular)).not.toThrow()
+    expect(beforeSpy).toHaveBeenCalled()
   })
 })
