@@ -1,8 +1,8 @@
 import ActionsStoreFlow from "../core/ActionsStoreFlow";
 import { PluginSubscriber } from "pinia-plugin-subscription";
 import { PluginConsole } from "../utils/pluginConsole";
-import type { PluginStoreOptions } from "../types/plugin";
 import { pluginName } from "../utils/constants";
+import type { ActionFlows } from "../types/plugin";
 
 
 class ActionsFlow extends PluginSubscriber<ActionsStoreFlow> {
@@ -16,3 +16,9 @@ class ActionsFlow extends PluginSubscriber<ActionsStoreFlow> {
 }
 
 export default new ActionsFlow();
+
+declare module 'pinia-plugin-subscription/types' {
+    interface StoreOptionsExtensions {
+        actionsFlow?: ActionFlows
+    }
+}
