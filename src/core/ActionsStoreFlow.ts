@@ -71,7 +71,7 @@ export default class ActionsStoreFlow extends StoreClass {
         if (!this._flowsOnAction.get(this.getOnActionFlowName(name, 'after'))) {
             after((result: any) => this.invokeFlow(args, name, afterAction, result ?? false))
         }
-        if (onErrorAction) {
+        if (onErrorAction && typeof onError === 'function') {
             onError((error: unknown) => {
                 if (typeof onErrorAction === 'string' && typeof this.store[onErrorAction] === 'function') {
                     this.store[onErrorAction](error)
