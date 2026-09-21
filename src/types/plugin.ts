@@ -13,6 +13,7 @@ type ActionFlowBeforeFunction = (args: ActionFlowDefaultParameters[]) => void
 interface ActionFlow {
     after?: ActionFlowAfterFunction | string
     before?: ActionFlowBeforeFunction | string
+    onError?: ((error: unknown) => void) | string
 }
 
 export type ActionFlows = Record<string, ActionFlow>

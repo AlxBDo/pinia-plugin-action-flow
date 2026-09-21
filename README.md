@@ -70,6 +70,7 @@ const storeOptions = {
     setMyState: {
       before: 'beforeSetMyState',      // Reference to a store method
       after: afterSetMyStateCallback    // Or use a direct function
+      onError: customErrorFunction
     }
   }
 }
@@ -97,6 +98,10 @@ function afterSetMyStateCallback(
     | { args: ActionFlowDefaultParameters[], result: ActionFlowDefaultParameters | ActionFlowDefaultParameters[] }
 ) {
   console.log('After setting myState to:', value)
+}
+
+function customErrorFunction(error: unknown) {
+  //...
 }
 ```
 

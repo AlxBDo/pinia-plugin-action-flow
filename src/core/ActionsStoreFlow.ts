@@ -38,10 +38,9 @@ export default class ActionsStoreFlow extends StoreClass {
         return this.store.$id + name + timing
     }
 
-    private invokeFlow(args: any[] | object, name: string, flow?: Function | string, result?: any): boolean {
-        if (!flow) { return false }
+    private invokeFlow(args: any[] | object, name: string, flow?: Function | string, result?: any): void {
+        if (!flow) { return }
         let timing = 'before'
-
         this.debugLog(`Invoking flow for action "${name}"`, { args, flow, result })
 
         if (typeof result !== 'undefined') {
@@ -58,20 +57,28 @@ export default class ActionsStoreFlow extends StoreClass {
         })
 
         this.addFlowOnAction(name, promiseFlow, timing)
-
-        return true
     }
 
-    onActionCallback({ after, args, name }: StoreOnActionCallbackParameters): void {
+    onActionCallback({ after, args, name, onError }: StoreOnActionCallbackParameters): void {
         if (this.hasDeniedFirstChar(name)) { return }
         if (!(this.flows as AnyObject)[name]) { return }
 
-        const { after: afterAction, before } = (this.flows as AnyObject)[name]
+        const { after: afterAction, before, onError: onErrorAction } = (this.flows as AnyObject)[name]
+
         if (!this._flowsOnAction.get(this.getOnActionFlowName(name, 'before'))) {
             this.invokeFlow(args, name, before)
         }
         if (!this._flowsOnAction.get(this.getOnActionFlowName(name, 'after'))) {
             after((result: any) => this.invokeFlow(args, name, afterAction, result ?? false))
+        }
+        if (onErrorAction) {
+            onError((error: unknown) => {
+                if (typeof onErrorAction === 'string' && typeof this.store[onErrorAction] === 'function') {
+                    this.store[onErrorAction](error)
+                } else if (typeof onErrorAction === 'function') {
+                    onErrorAction(error)
+                }
+            })
         }
     }
 }
