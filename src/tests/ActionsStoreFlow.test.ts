@@ -2,7 +2,10 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { createPinia, defineStore, type Pinia } from 'pinia'
 import { createApp, ref } from 'vue'
 import { createPlugin } from 'pinia-plugin-subscription'
+import { createTracerRegistry } from 'pinia-plugin-subscription/helpers'
+import ActionsStoreFlow from '../core/ActionsStoreFlow'
 import piniaPluginActionFlow from '../plugins/ActionsFlow'
+import type { ActionFlowDefaultParameters } from '../types/plugin'
 
 describe('ActionsStoreFlow', () => {
   let pinia: Pinia
@@ -14,13 +17,81 @@ describe('ActionsStoreFlow', () => {
     createApp({}).use(pinia)
   })
 
+  it('emits flow traces through the configured tracer registry', () => {
+    const traceEvents: { label: string }[] = []
+    const tracerRegistry = createTracerRegistry({ enabled: true })
+    tracerRegistry.addListener({
+      filter: () => true,
+      handler: (event) => traceEvents.push(event)
+    })
+
+    const tracedPinia = createPinia()
+    tracedPinia.use(createPlugin([piniaPluginActionFlow], {
+      tracerHandler: tracerRegistry.tracerHandler
+    }))
+    createApp({}).use(tracedPinia)
+
+    const useStore = defineStore('traced-flow-store', () => ({
+      setValue: () => undefined
+    }), {
+      storeOptions: { flows: { setValue: { before: () => undefined } } }
+    })
+
+    useStore(tracedPinia).setValue()
+
+    expect(traceEvents.some(({ label }) => label.endsWith(':ActionsFlow:Invoke'))).toBe(true)
+  })
+
+  it('returns the asynchronous before flow promise to the subscription lifecycle', async () => {
+    let finishBeforeFlow: (() => void) | undefined
+    const storeId = 'async-before-flow-store'
+    const callbackSpy = vi.spyOn(ActionsStoreFlow.prototype, 'onActionCallback')
+    const tracerRegistry = createTracerRegistry({ enabled: true })
+    tracerRegistry.addListener({
+      filter: ({ scope }) => scope === storeId,
+      handler: () => undefined
+    })
+    const tracedPinia = createPinia()
+    tracedPinia.use(createPlugin([piniaPluginActionFlow], {
+      tracerHandler: tracerRegistry.tracerHandler
+    }))
+    createApp({}).use(tracedPinia)
+
+    const useStore = defineStore(storeId, () => ({
+      setValue: () => undefined
+    }), {
+      storeOptions: {
+        flows: {
+          setValue: {
+            before: () => new Promise<void>((resolve) => { finishBeforeFlow = resolve })
+          }
+        }
+      }
+    })
+
+    useStore(tracedPinia).setValue()
+
+    expect(finishBeforeFlow).toBeTypeOf('function')
+    const flowCompletion = callbackSpy.mock.results[0]?.value
+    expect(flowCompletion).toBeInstanceOf(Promise)
+
+    let flowCompleted = false
+    void flowCompletion.then(() => { flowCompleted = true })
+    await Promise.resolve()
+    expect(flowCompleted).toBe(false)
+
+    finishBeforeFlow?.()
+    await flowCompletion
+    expect(flowCompleted).toBe(true)
+  })
+
   it('invokes before/after flows through a real Pinia dispatch and transforms args', () => {
     const beforeSpy = vi.fn()
     const afterSpy = vi.fn()
 
-    const before = (args: string[]) => {
+    const before = (args: ActionFlowDefaultParameters[]) => {
       beforeSpy(args)
-      args[0] = (args[0] ?? '').toUpperCase()
+      args[0] = String(args[0] ?? '').toUpperCase()
     }
     const after = (args: any) => afterSpy(args)
 
@@ -101,9 +172,9 @@ describe('ActionsStoreFlow', () => {
       storeOptions: {
         flows: {
           setMyState: {
-            before: (args: string[]) => {
+            before: (args: ActionFlowDefaultParameters[]) => {
               beforeSpy()
-              args[0] = (args[0] ?? '').toUpperCase()
+              args[0] = String(args[0] ?? '').toUpperCase()
             },
             // keeps the guard "locked" until the test explicitly releases it
             after: () => new Promise<void>((resolve) => { releaseAfter = resolve })

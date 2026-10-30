@@ -1,14 +1,16 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import { createPlugin, PLUGIN_NAME as PPS } from 'pinia-plugin-subscription';
+import { createPlugin } from 'pinia-plugin-subscription';
+import { createTracerRegistry } from 'pinia-plugin-subscription/helpers';
 import piniaPluginActionFlow from '../plugins/ActionsFlow.ts';
 import './style.css'
 import App from './App.vue'
-import { pluginName } from '../utils/constants.ts';
 
 const app = createApp(App)
 const pinia = createPinia();
 
-pinia.use(createPlugin([piniaPluginActionFlow], [PPS, pluginName]));
+const tracerRegistry = createTracerRegistry();
+pinia.use(createPlugin([piniaPluginActionFlow], { tracerHandler: tracerRegistry.tracerHandler }));
+tracerRegistry.addScopesListener(['onActionStore']);
 app.use(pinia)
 app.mount('#app')

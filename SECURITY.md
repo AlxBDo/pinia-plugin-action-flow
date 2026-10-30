@@ -35,7 +35,7 @@ When using pinia-plugin-action-flow:
 1. **Keep Dependencies Updated:** Regularly update Pinia, Vue, and other dependencies to the latest versions
 2. **Review Plugin Code:** Always review subscriber code before using in production
 3. **Validate Store Data:** Validate data before storing in Pinia stores
-4. **Debug Mode:** Disable debug mode in production (set `false` when calling `createPlugin`)
+4. **Tracing:** Tracing is disabled by default in production builds; explicitly enable it only when needed and avoid exposing sensitive trace payloads
 
 ## Dependencies Security
 

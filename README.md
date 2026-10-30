@@ -9,7 +9,7 @@ A powerful Pinia plugin that enables you to define custom callbacks (flows) that
 - **Flexible Configuration**: Define flows using functions or method names
 - **Type-Safe**: Full TypeScript support with proper type definitions
 - **Non-Intrusive**: Works seamlessly with existing Pinia stores
-- **Debug Support**: Optional debug logging for development
+- **Structured Tracing**: Opt-in flow events through `pinia-plugin-subscription`'s Tracer
 
 ## Installation
 
@@ -54,6 +54,23 @@ export const useMyStore = defineStore('myStore', () => {
   }
 })
 ```
+
+To enable structured flow traces, configure a tracer registry and pass its handler
+to `createPlugin`:
+
+```typescript
+import { createTracerRegistry } from 'pinia-plugin-subscription/helpers'
+
+const tracerRegistry = createTracerRegistry()
+tracerRegistry.addScopesListener(['myStore'])
+pinia.use(createPlugin([ActionsFlows], {
+  tracerHandler: tracerRegistry.tracerHandler
+}))
+```
+
+Tracing is disabled by default in production builds. See the
+[`pinia-plugin-subscription` tracing guide](https://github.com/AlxBDo/pinia-plugin-subscription/blob/main/docs/tracing.md)
+for filters, redaction, and production configuration.
 
 ## Usage
 
@@ -317,14 +334,13 @@ interface PluginStoreOptions {
 - Each action flow is tracked to avoid re-triggering during nested calls
 - Use the plugin judiciously for performance-critical applications
 
-## Debugging
+## Tracing
 
-Enable debug logging by passing debug configuration when initializing your store:
-
-```typescript
-// The plugin includes built-in debug support through pinia-plugin-subscription
-// Check the Pinia DevTools for flow execution details
-```
+Flow initialization and invocation are emitted as structured Tracer events.
+Tracing is opt-in: configure a `createTracerRegistry()` from
+`pinia-plugin-subscription/helpers` and pass its `tracerHandler` to
+`createPlugin()`, as shown in [Setup](#setup). No `debug` flag or custom console
+is required.
 
 ## TypeScript Support
 
