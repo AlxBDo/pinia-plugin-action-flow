@@ -1,4 +1,4 @@
-import type { AnyObject, StoreOptions } from "pinia-plugin-subscription"
+import type { AnyObject, StoreOptions } from "pinia-plugin-subscription/types"
 
 export type ActionFlowDefaultParameters = boolean | object | null | number | string | undefined
 type ActionFlowAfterFunction = (
@@ -7,13 +7,13 @@ type ActionFlowAfterFunction = (
             args: ActionFlowDefaultParameters[],
             result: ActionFlowDefaultParameters | ActionFlowDefaultParameters[]
         }
-) => void
-type ActionFlowBeforeFunction = (args: ActionFlowDefaultParameters[]) => void
+) => void | Promise<void>
+type ActionFlowBeforeFunction = (args: ActionFlowDefaultParameters[]) => void | Promise<void>
 
 interface ActionFlow {
     after?: ActionFlowAfterFunction | string
     before?: ActionFlowBeforeFunction | string
-    onError?: ((error: unknown) => void) | string
+    onError?: ((error: unknown) => void | Promise<void>) | string
 }
 
 export type ActionFlows = Record<string, ActionFlow>

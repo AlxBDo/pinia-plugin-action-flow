@@ -16,10 +16,10 @@ export const useOnActionStore = defineStore('onActionStore', () => {
 
     function setMyState(value: string) {
         myState.value = value
+        return { myState }
     }
 
     function beforeSetMyState(args: string[]) {
-        console.log('Before setting myState with args:', args)
         args[0] = args[0].toUpperCase()
     }
 

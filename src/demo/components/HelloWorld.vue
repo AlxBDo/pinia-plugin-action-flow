@@ -7,8 +7,6 @@ defineProps<{ msg: string }>()
 const count = ref(0)
 const store = useOnActionStore();
 store.setMyState('Hello from HelloWorld.vue');
-
-console.log('HelloWorld.vue - onActionStore', store)
 </script>
 
 <template>
