@@ -39,7 +39,7 @@ describe('ActionsStoreFlow', () => {
 
     useStore(tracedPinia).setValue()
 
-    expect(traceEvents.some(({ label }) => label.endsWith(':ActionsFlow:Invoke'))).toBe(true)
+    expect(traceEvents.some(({ label }) => label.endsWith(':ActionsFlow:Invoke:before'))).toBe(true)
   })
 
   it('returns the asynchronous before flow promise to the subscription lifecycle', async () => {
